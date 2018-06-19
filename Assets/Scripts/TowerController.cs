@@ -91,7 +91,7 @@ public class Tower : Object
     public Vector3Int TowerSize;
     public GameObject TowerGameObject;
 
-    public Tower(Vector3Int towerSize, int cubeSize, float defaultSpeed /*, GameObject towerPrefab*/)
+    public Tower(Vector3Int towerSize, float cubeSize, float defaultSpeed /*, GameObject towerPrefab*/)
     {
         cubePile = new Cube[towerSize.x, towerSize.y, towerSize.z];
         TowerSize = towerSize;
@@ -131,18 +131,36 @@ public class TowerController : MonoBehaviour
 {
     public GameObject TowerMesh;
     private Tower GameTower;
+    private bool isInitialized;
 
     void Start()
     {
-        GameTower = new Tower(new Vector3Int(4, 8, 4), 1, 200f);
+    }
+
+    public void Initialize(Vector3Int towerSize, float defaultSpeed)
+    {
+        if (IsInitialized())
+        {
+            Debug.Log("Tower Already Initialized.");
+            return;
+        }
+
+        var cubeSize = 4f / Mathf.Max(towerSize.x, towerSize.z);
+        GameTower = new Tower(towerSize, cubeSize, defaultSpeed);
         SetTowerMesh();
+        isInitialized = true;
+    }
+
+    public bool IsInitialized()
+    {
+        return isInitialized;
     }
 
     void Update()
     {
     }
 
-    public void SetTowerMesh()
+    private void SetTowerMesh()
     {
         TowerMesh.transform.localScale = (Vector3) GameTower.TowerSize * GameTower.CubeSize;
         var towerPosition = TowerMesh.transform.position;
