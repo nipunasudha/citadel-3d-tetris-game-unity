@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public struct CubePosition
+public struct CubeGap
 {
     public int rightGap;
     public int upGap;
     public int forwardGap;
 
-    CubePosition(int rightGap, int upGap, int forwardGap)
+    CubeGap(int rightGap, int upGap, int forwardGap)
     {
         this.rightGap = rightGap;
         this.upGap = upGap;
@@ -27,14 +27,14 @@ public class DropletPopulate : MonoBehaviour
 {
     public GameObject CubeUnit;
     public float CubeScale;
-    public CubePosition[] cubePositionList;
+    public CubeGap[] CubeGapList;
 
     private GameObject originCube;
 
     void Start()
     {
         CreateOriginCube();
-        PopulateDroplet(cubePositionList);
+        PopulateDroplet(CubeGapList);
     }
 
     void Update()
@@ -49,7 +49,7 @@ public class DropletPopulate : MonoBehaviour
         return originCube;
     }
 
-    void PopulateDroplet(CubePosition[] shape)
+    void PopulateDroplet(CubeGap[] shape)
     {
         for (int i = 0; i < shape.Length; i++)
         {
