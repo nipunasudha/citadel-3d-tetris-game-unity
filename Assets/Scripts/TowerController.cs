@@ -3,25 +3,22 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class Cube
+public class Cube : Object
 {
-    public Cube OriginCube;
-    public Vector3 FromDropletOrigin;
-    public Vector3 FromTowerOrigin;
+    public OriginCube OriginCube;
+    public Vector3Int FromDropletOrigin;
+    public Vector3Int FromTowerOrigin;
 
-    public Cube(Cube originCube, Vector3 fromDropletOrigin)
+    public Cube(OriginCube originCube, Vector3Int fromDropletOrigin)
     {
         OriginCube = originCube;
         FromDropletOrigin = fromDropletOrigin;
-        FromTowerOrigin = new Vector3();
-        UpdatePosition();
+        FromTowerOrigin = new Vector3Int();
     }
 
-    public Cube(Vector3 fromTowerOrigin)
+    private GameObject GetCubePrefab()
     {
-        OriginCube = this;
-        FromDropletOrigin = Vector3.zero;
-        FromTowerOrigin = fromTowerOrigin;
+        return OriginCube.CubeGameObject;
     }
 
     void UpdatePosition()
@@ -30,16 +27,30 @@ public class Cube
     }
 }
 
+public class SlaveCube : Cube
+{
+    public SlaveCube(OriginCube originCube, Vector3Int fromDropletOrigin) : base(originCube, fromDropletOrigin)
+    {
+    }
+}
+
 public class OriginCube : Cube
 {
-    public Vector3 Orientation;
+    public Vector3Int Orientation;
+    public GameObject CubeGameObject;
+    public Droplet ParentDroplet;
 
-    public OriginCube(Vector3 fromTowerOrigin, Vector3 orientation) : base(fromTowerOrigin)
+    public OriginCube(Vector3Int fromTowerOrigin, Vector3Int orientation, Droplet parentDroplet) :
+        base(null, fromTowerOrigin)
     {
+        ParentDroplet = parentDroplet;
+        CubeGameObject = Instantiate(parentDroplet.ParentTower.CubePrefab,
+            parentDroplet.ParentTower.CubePositionToAbsolute(fromTowerOrigin), Quaternion.identity);
         Orientation = orientation;
+        OriginCube = this;
     }
 
-    public void SetPositionFromTowerOrigin(Vector3 fromTowerOrigin)
+    public void SetPositionFromTowerOrigin(Vector3Int fromTowerOrigin)
     {
         FromTowerOrigin = fromTowerOrigin;
     }
@@ -47,19 +58,20 @@ public class OriginCube : Cube
 
 public class Droplet
 {
-    public Tower m_Tower;
     public OriginCube OriginCube;
     public float Speed;
+    public Tower ParentTower;
 
-    public Droplet(Tower m_Tower, Vector3 originPositionFromTowerOrigin, Vector3 orientation, float defaultSpeed)
+    public Droplet(Vector3Int originPositionFromTowerOrigin, Vector3Int orientation, float defaultSpeed,
+        Tower parentTower)
     {
-        this.m_Tower = m_Tower;
+        ParentTower = parentTower;
         Speed = defaultSpeed;
-        OriginCube = new OriginCube(originPositionFromTowerOrigin, Vector3.zero);
+        OriginCube = new OriginCube(originPositionFromTowerOrigin, Vector3Int.zero, this);
         SetOrientation(orientation);
     }
 
-    public void SetOrientation(Vector3 orientation)
+    public void SetOrientation(Vector3Int orientation)
     {
         OriginCube.Orientation = orientation;
     }
@@ -74,7 +86,7 @@ public class Droplet
         return OriginCube.FromTowerOrigin;
     }
 
-    public void MoveToTowerPosition(Vector3 position)
+    public void MoveToTowerPosition(Vector3Int position)
     {
         //TODO Use delegates here. Ref: https://www.tutorialspoint.com/csharp/csharp_delegates.htm
         OriginCube.SetPositionFromTowerOrigin(position);
@@ -89,15 +101,17 @@ public class Tower : Object
     public float DefaultSpeed;
     public float CubeSize;
     public Vector3Int TowerSize;
-    public GameObject TowerGameObject;
 
-    public Tower(Vector3Int towerSize, float cubeSize, float defaultSpeed /*, GameObject towerPrefab*/)
+    public GameObject CubePrefab;
+//    public GameObject TowerGameObject;
+
+    public Tower(Vector3Int towerSize, float cubeSize, float defaultSpeed, GameObject cubePrefab)
     {
         cubePile = new Cube[towerSize.x, towerSize.y, towerSize.z];
         TowerSize = towerSize;
         DefaultSpeed = defaultSpeed;
         CubeSize = cubeSize;
-//        TowerGameObject = CreateTowerGameObject(towerPrefab);
+        CubePrefab = cubePrefab;
     }
 
 /*    private GameObject CreateTowerGameObject(GameObject towerPrefab)
@@ -108,15 +122,24 @@ public class Tower : Object
         return towerInstance;
     }
 */
-    public Droplet CreateDroplet(Vector3 position, Vector3 orientation)
+    public Droplet CreateDroplet(Vector3Int position, Vector3Int orientation)
     {
-        Droplet newDroplet = new Droplet(this, position, orientation, DefaultSpeed);
+        Droplet newDroplet = new Droplet(position, orientation, DefaultSpeed, this);
         return newDroplet;
     }
 
-    public Vector3 getSize()
+    public Vector3Int GetSize()
     {
         return TowerSize;
+    }
+
+    public Vector3 CubePositionToAbsolute(Vector3Int cubePosition)
+    {
+        Vector3 cubeAbsolutePosition;
+        cubeAbsolutePosition.x = CubeSize * cubePosition.x + CubeSize / 2 - CubeSize * GetSize().x / 2;
+        cubeAbsolutePosition.y = CubeSize * cubePosition.y + CubeSize / 2;
+        cubeAbsolutePosition.z = CubeSize * cubePosition.z + CubeSize / 2 - CubeSize * GetSize().z / 2;
+        return cubeAbsolutePosition;
     }
 
     public void Update(float deltaTime)
@@ -130,6 +153,7 @@ public class Tower : Object
 public class TowerController : MonoBehaviour
 {
     public GameObject TowerMesh;
+    public GameObject CubePrefab;
     private Tower GameTower;
     private bool isInitialized;
 
@@ -146,9 +170,14 @@ public class TowerController : MonoBehaviour
         }
 
         var cubeSize = 4f / Mathf.Max(towerSize.x, towerSize.z);
-        GameTower = new Tower(towerSize, cubeSize, defaultSpeed);
+        GameTower = new Tower(towerSize, cubeSize, defaultSpeed, CubePrefab);
         SetTowerMesh();
         isInitialized = true;
+    }
+
+    public Tower GetTower()
+    {
+        return GameTower;
     }
 
     public bool IsInitialized()

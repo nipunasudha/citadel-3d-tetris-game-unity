@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 65358464905807388}
   - component: {fileID: 23326176658987518}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: TowerBoundaryBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -137,3 +137,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TowerMesh: {fileID: 1148788678831366}
+  CubePrefab: {fileID: 1871579254377534, guid: 4d3c80eeee6980949899087cfb981b12, type: 2}
+  GameTower: {fileID: 0}
